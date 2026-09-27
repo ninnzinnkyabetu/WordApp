@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#1f6feb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>流し見単語帳</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main id="app">
+    <section id="view-flow" class="view" data-view="flow"></section>
+    <section id="view-pron" class="view" data-view="pron" hidden></section>
+    <section id="view-list" class="view" data-view="list" hidden></section>
+    <section id="view-add" class="view" data-view="add" hidden></section>
+    <section id="view-settings" class="view" data-view="settings" hidden></section>
+  </main>
+
+  <nav class="tabbar" aria-label="メニュー">
+    <button data-tab="flow" class="active"><span class="ti">▶</span><span>流し見</span></button>
+    <button data-tab="pron"><span class="ti">🔊</span><span>発音</span></button>
+    <button data-tab="list"><span class="ti">☰</span><span>一覧</span></button>
+    <button data-tab="add"><span class="ti">＋</span><span>追加</span></button>
+    <button data-tab="settings"><span class="ti">⚙</span><span>設定</span></button>
+  </nav>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

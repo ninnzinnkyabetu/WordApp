@@ -1,0 +1,17 @@
+{
+  "name": "流し見単語帳",
+  "short_name": "単語帳",
+  "description": "単語と意味だけを流し見して、出会う回数を増やす英単語アプリ",
+  "lang": "ja",
+  "start_url": "./#flow",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f7f9",
+  "theme_color": "#1f6feb",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
