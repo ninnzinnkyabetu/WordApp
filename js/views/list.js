@@ -4,7 +4,7 @@ import { $, $$, toast, openDialog, confirmDialog } from '../ui.js';
 import { escapeHtml, normalizeKey, meaningParts, normalizeMeaning, splitTags, uniq } from '../text.js';
 import { speak } from '../speech.js';
 import { findDuplicateGroups } from '../importer.js';
-import { stageBadge } from './common.js';
+import { stageBadge, filterOptions, matchFilter } from './common.js';
 
 const root = $('#view-list');
 const PAGE = 200;
@@ -18,7 +18,7 @@ const FILTERS = {
   trash: { label: 'ゴミ箱', fn: (i) => store.isAlive(i) && !!i.deletedAt },
 };
 
-const state = { q: '', filter: 'all', sort: 'new', select: false, selected: new Set(), limit: PAGE };
+const state = { q: '', filter: 'all', scope: '', kind: '', sort: 'new', select: false, selected: new Set(), limit: PAGE };
 let built = false;
 
 function skeleton() {
@@ -28,6 +28,14 @@ function skeleton() {
       <button class="btn small" id="ls-dupes">重複チェック</button>
     </div>
     <input type="search" id="ls-q" placeholder="検索（英語・日本語・タグ・出典）" autocomplete="off">
+    <div class="row" style="margin-top:10px;flex-wrap:nowrap">
+      <select id="ls-scope" class="grow" style="min-width:0" aria-label="タグ・出典で絞り込み"></select>
+      <select id="ls-kind" style="width:auto" aria-label="単語・フレーズで絞り込み">
+        <option value="">単語＋フレーズ</option>
+        <option value="word">単語のみ</option>
+        <option value="phrase">フレーズのみ</option>
+      </select>
+    </div>
     <div class="row between" style="margin-top:10px">
       <div class="seg" id="ls-filters"></div>
     </div>
@@ -45,6 +53,9 @@ function skeleton() {
     <div id="ls-body"></div>`;
 
   $('#ls-q', root).addEventListener('input', (e) => { state.q = e.target.value; state.limit = PAGE; renderList(); });
+  const onNarrow = (key) => (e) => { state[key] = e.target.value; state.selected.clear(); state.limit = PAGE; renderList(); };
+  $('#ls-scope', root).addEventListener('change', onNarrow('scope'));
+  $('#ls-kind', root).addEventListener('change', onNarrow('kind'));
   $('#ls-sort', root).addEventListener('change', (e) => { state.sort = e.target.value; renderList(); });
   $('#ls-selmode', root).addEventListener('click', () => {
     state.select = !state.select;
@@ -56,6 +67,11 @@ function skeleton() {
 }
 
 function renderFilters() {
+  // タグ・出典の候補は件数ごと作り直す。選んでいたものが消えたら「すべて」に戻す
+  const sel = $('#ls-scope', root);
+  sel.innerHTML = filterOptions(state.scope);
+  sel.value = state.scope;
+  if (sel.value !== state.scope) { state.scope = ''; sel.value = ''; }
   const counts = {};
   const alive = store.all();
   for (const k of Object.keys(FILTERS)) counts[k] = alive.filter(FILTERS[k].fn).length;
@@ -78,7 +94,8 @@ function matches(i, q) {
 
 function filtered() {
   const q = state.q.normalize('NFKC').toLowerCase().trim();
-  const list = store.all().filter((i) => FILTERS[state.filter].fn(i) && matches(i, q));
+  const list = store.all().filter((i) => FILTERS[state.filter].fn(i) && matchFilter(i, state.scope)
+    && (!state.kind || i.kind === state.kind) && matches(i, q));
   const cmp = {
     new: (a, b) => b.createdAt - a.createdAt,
     old: (a, b) => a.createdAt - b.createdAt,
@@ -97,7 +114,7 @@ function renderList() {
   renderBulk(list);
 
   if (!list.length) {
-    $('#ls-body', root).innerHTML = `<div class="empty">${state.q ? '見つかりませんでした' : '該当する単語はありません'}</div>`;
+    $('#ls-body', root).innerHTML = `<div class="empty">${state.q || state.scope || state.kind ? '見つかりませんでした' : '該当する単語はありません'}</div>`;
     return;
   }
   $('#ls-body', root).innerHTML = `
