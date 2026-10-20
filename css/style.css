@@ -299,3 +299,8 @@ pre.prompt {
   .quiz-streak, .quiz-streak.bump, .quiz-card, .quiz-burst { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
   .quiz-burst { animation: none; opacity: 1; }
 }
+.quiz-next { position: relative; overflow: hidden; width: 100%; margin-top: 12px; }
+.quiz-next-bar {
+  position: absolute; left: 0; bottom: 0; height: 4px; width: 0;
+  background: rgb(255 255 255 / .6); transition-property: width; transition-timing-function: linear;
+}

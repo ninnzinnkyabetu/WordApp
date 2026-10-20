@@ -12,8 +12,10 @@ import * as fx from './quiz-fx.js';
 
 const root = $('#view-quiz');
 const CHOICES = 4;
-const AUTO_NEXT_MS = 800;
-const MILESTONE_NEXT_MS = 1300; // 節目の演出を見せる分だけ長く待つ
+const AUTO_NEXT_MS = 400;
+const MILESTONE_NEXT_MS = 700;   // 節目の文字は次の問題の上でも消えていくので少しだけ長く
+const WRONG_NEXT_MS = 1800;      // 不正解は正解を確かめる時間をとる
+const WRONG_NOTE_NEXT_MS = 2600; // メモがあるときはさらに長く
 
 let visible = false;
 let phase = 'setup';  // setup | question | result
@@ -209,10 +211,16 @@ function answer(n) {
   fx.broken(streak);
   streak = 0;
   renderStreak(false);
+  const ms = item.note ? WRONG_NOTE_NEXT_MS : WRONG_NEXT_MS;
   $('#qz-after', root).innerHTML = `
     ${item.note ? `<p class="muted small">${escapeHtml(item.note)}</p>` : ''}
-    <button class="btn big primary" id="qz-next" style="width:100%;margin-top:12px">次へ</button>`;
+    <button class="btn big primary quiz-next" id="qz-next">次へ<span class="quiz-next-bar"></span></button>`;
   $('#qz-next', root).addEventListener('click', next);
+  const bar = $('.quiz-next-bar', root);
+  bar.style.transitionDuration = `${ms}ms`;
+  void bar.offsetWidth;
+  bar.style.width = '100%';
+  timer = setTimeout(next, ms);
 }
 
 function next() {
