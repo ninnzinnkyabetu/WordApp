@@ -1,5 +1,5 @@
 // 取り込み時の重複チェックと反映。
-import { normalizeKey, normalizeMeaning, meaningParts, uniq } from './text.js';
+import { normalizeKey, meaningParts, mergeMeaning, uniq } from './text.js';
 import * as store from './store.js';
 
 /**
@@ -20,9 +20,7 @@ export function classify(entries) {
     const prev = merged.get(key);
     if (prev) {
       batchDupes++;
-      if (!meaningParts(prev.meaning).includes(normalizeMeaning(e.meaning))) {
-        prev.meaning = `${prev.meaning} / ${e.meaning}`;
-      }
+      prev.meaning = mergeMeaning(prev.meaning, e.meaning);
       prev.tags = uniq([...prev.tags, ...e.tags]);
       prev.sources = uniq([...prev.sources, ...e.sources]);
       if (!prev.note && e.note) prev.note = e.note;
@@ -66,9 +64,7 @@ export async function apply(rows) {
       ex.meaning = e.meaning;
       if (e.note) ex.note = e.note;
     } else if (action === 'append') {
-      const exParts = meaningParts(ex.meaning);
-      const add = e.meaning.split(/\s*[\/／;；]\s*/).filter((p) => p && !exParts.includes(normalizeMeaning(p)));
-      if (add.length) ex.meaning = `${ex.meaning} / ${add.join(' / ')}`;
+      ex.meaning = mergeMeaning(ex.meaning, e.meaning);
       if (e.note && !ex.note) ex.note = e.note;
     }
     changed.push(ex);

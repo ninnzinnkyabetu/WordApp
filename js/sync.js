@@ -155,7 +155,11 @@ async function pull() {
       pending.delete(d.id); // サーバーの方が新しいので、この端末の古い変更は送らない
     }
   });
-  if (take.length) await store.save(take, { touch: false, push: false });
+  if (take.length) {
+    await store.save(take, { touch: false, push: false });
+    // 古いバージョンの端末から届いた、意味が重複したままのデータを直す
+    await store.cleanMeanings(take);
+  }
 
   if (firstTime) {
     // この端末で初めての同期: サーバーに無い／この端末の方が新しいものを全部送る

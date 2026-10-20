@@ -38,6 +38,8 @@ async function main() {
   window.addEventListener('hashchange', () => go(location.hash.slice(1)));
   go(location.hash.slice(1) || 'flow');
   sync.init();
+  // 意味の重複（「主に / ほとんど / 主に」など）を自動で直す
+  store.cleanMeanings().then((n) => { if (n) toast(`意味の重複を ${n} 件整理しました`); });
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});

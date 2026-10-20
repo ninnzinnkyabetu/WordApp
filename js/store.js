@@ -1,6 +1,6 @@
 // 単語データの保存（IndexedDB）とメモリ上のキャッシュ。
 // 個人利用で数千〜数万件想定なので、起動時に全件読み込んで Map で持つ。
-import { normalizeKey, isPhrase, uniq } from './text.js';
+import { normalizeKey, isPhrase, uniq, dedupeMeaning } from './text.js';
 
 const DB_NAME = 'wordapp';
 const STORE = 'items';
@@ -61,7 +61,10 @@ export async function save(list, { silent = false, touch = true, push = touch } 
   if (!list.length) return;
   const now = Date.now();
   for (const i of list) {
-    if (touch) i.updatedAt = now;
+    if (touch) {
+      i.updatedAt = now;
+      if (typeof i.meaning === 'string') i.meaning = dedupeMeaning(i.meaning);
+    }
     items.set(i.id, i);
   }
   await write(list);
@@ -122,6 +125,26 @@ export function activeByKey() {
   return m;
 }
 
+/**
+ * 意味の中の重複（「主に / ほとんど / 主に」など）を見つけて取り除く。直した件数を返す。
+ * updatedAt は「元の値 + 1」にする。こうすると、別の端末でこの後に編集された内容があれば
+ * 同期でそちらが勝ち（受け取った後にまたここで直される）、無ければ直したものがクラウドへ送られる。
+ */
+export async function cleanMeanings(list = all()) {
+  const fixed = [];
+  for (const i of list) {
+    const cur = items.get(i.id);
+    if (!cur || cur.purged || typeof cur.meaning !== 'string') continue;
+    const m = dedupeMeaning(cur.meaning);
+    if (m === cur.meaning) continue;
+    cur.meaning = m;
+    cur.updatedAt = (cur.updatedAt || 0) + 1;
+    fixed.push(cur);
+  }
+  await save(fixed, { touch: false, push: true });
+  return fixed.length;
+}
+
 /** 完全削除。同期のために中身を消した「墓標」だけ残す。 */
 export function purge(item) {
   Object.assign(item, {
@@ -152,5 +175,6 @@ export async function restore(data) {
     if (!cur || (it.updatedAt || 0) > (cur.updatedAt || 0)) changed.push(it);
   }
   await save(changed, { touch: false, push: true });
+  await cleanMeanings(changed);
   return changed.length;
 }

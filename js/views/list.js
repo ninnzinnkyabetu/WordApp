@@ -1,7 +1,7 @@
 // 一覧・検索・非表示・削除・重複整理
 import * as store from '../store.js';
 import { $, $$, toast, openDialog, confirmDialog } from '../ui.js';
-import { escapeHtml, normalizeKey, meaningParts, normalizeMeaning, splitTags, uniq } from '../text.js';
+import { escapeHtml, normalizeKey, mergeMeaning, splitTags, uniq } from '../text.js';
 import { speak } from '../speech.js';
 import { findDuplicateGroups } from '../importer.js';
 import { stageBadge, emptyScope, scopePicker, matchScope } from './common.js';
@@ -326,10 +326,7 @@ async function dedupeDialog() {
     for (const i of g) {
       if (i.id === kept.id) continue;
       if (ok.merge) {
-        const parts = meaningParts(kept.meaning);
-        i.meaning.split(/\s*[\/／;；]\s*/).forEach((p) => {
-          if (p && !parts.includes(normalizeMeaning(p))) { kept.meaning += ` / ${p}`; parts.push(normalizeMeaning(p)); }
-        });
+        kept.meaning = mergeMeaning(kept.meaning, i.meaning);
         kept.tags = uniq([...kept.tags, ...i.tags]);
         kept.sources = uniq([...kept.sources, ...i.sources]);
         kept.seenCount += i.seenCount;

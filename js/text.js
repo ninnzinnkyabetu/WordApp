@@ -17,9 +17,47 @@ export function normalizeMeaning(s) {
   return String(s ?? '').normalize('NFKC').replace(/\s+/g, '').replace(/[。．.]+$/u, '').toLowerCase();
 }
 
+// 意味の区切り。「/」「;」が大きな区切りで、その中の「、」「,」が小さな区切り（1,000 のような数字の桁区切りは除く）
+const PART_SEP = /\s*[\/／;；]\s*/;
+const SUB_SEP = /\s*(?:[、，]|,(?!\d))\s*/;
+
 /** 「A / B、C」のような意味を部分ごとに分ける */
 export function meaningParts(s) {
-  return String(s ?? '').split(/\s*[\/／;；]\s*/).map(normalizeMeaning).filter(Boolean);
+  return String(s ?? '').split(PART_SEP).flatMap((p) => p.split(SUB_SEP)).map(normalizeMeaning).filter(Boolean);
+}
+
+/**
+ * 意味の中で同じものが繰り返されていたら、2回目以降を取り除く。
+ * 例）「主に / ほとんど / だいたい / 主に / ほとんど」→「主に / ほとんど / だいたい」
+ * 重複が無ければ元の文字列をそのまま返す（区切りの書き方を勝手に変えない）。
+ */
+export function dedupeMeaning(s) {
+  const src = String(s ?? '');
+  const seen = new Set();
+  let removed = false;
+  const out = [];
+  for (const part of src.split(PART_SEP)) {
+    const subs = part.split(SUB_SEP);
+    const kept = subs.filter((x) => {
+      const k = normalizeMeaning(x);
+      if (!k) return false;
+      if (seen.has(k)) { removed = true; return false; }
+      seen.add(k);
+      return true;
+    });
+    if (!kept.length) continue;
+    out.push(kept.length === subs.length ? part.trim() : kept.join('、'));
+  }
+  return removed ? out.join(' / ') : src;
+}
+
+/** 意味 a に b を付け足す（すでにある部分は付け足さない） */
+export function mergeMeaning(a, b) {
+  if (!String(a ?? '').trim()) return String(b ?? '').trim();
+  if (!String(b ?? '').trim()) return String(a).trim();
+  const merged = dedupeMeaning(`${a} / ${b}`);
+  // b がすべて a に含まれていたら a のまま
+  return meaningParts(b).every((p) => meaningParts(a).includes(p)) ? String(a).trim() : merged;
 }
 
 export const isPhrase = (term) => /\s/.test(term.trim());
