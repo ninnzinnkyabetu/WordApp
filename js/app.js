@@ -3,12 +3,13 @@ import * as sync from './sync.js';
 import { applyTheme } from './settings.js';
 import { $$, toast } from './ui.js';
 import * as flow from './views/flow.js';
+import * as quiz from './views/quiz.js';
 import * as pron from './views/pron.js';
 import * as list from './views/list.js';
 import * as add from './views/add.js';
 import * as settingsView from './views/settings.js';
 
-const views = { flow, pron, list, add, settings: settingsView };
+const views = { flow, quiz, pron, list, add, settings: settingsView };
 let current = null;
 
 function go(name) {

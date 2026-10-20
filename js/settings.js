@@ -9,6 +9,10 @@ const defaults = {
   voiceURI: '',
   filter: '',         // 流し見の絞り込み（"tag:xxx" / "src:xxx"）
   theme: 'auto',      // auto | light | dark
+  quizCount: 10,      // クイズの問題数（0 = すべて）
+  quizOrder: 'weak',  // weak（苦手・久しぶり優先） | shuffle
+  quizFilter: '',     // クイズの出題範囲
+  quizIncludeDone: false, // ◎ 済みも出題する
 };
 
 function load() {

@@ -11,6 +11,7 @@ const PAGE = 200;
 
 const FILTERS = {
   learning: { label: '学習中', fn: (i) => store.isVisible(i) && i.stage < 2 },
+  weak: { label: 'クイズ苦手', fn: (i) => store.isVisible(i) && (i.quizWrong || 0) > 0 && (i.quizWrong || 0) >= (i.quizCorrect || 0) },
   done: { label: '◎ 済み', fn: (i) => store.isVisible(i) && i.stage === 2 },
   hidden: { label: '非表示', fn: (i) => store.isActive(i) && i.hidden },
   all: { label: 'すべて', fn: (i) => store.isActive(i) },
@@ -200,7 +201,7 @@ async function editDialog(item) {
         </label>
         <label class="row" style="margin-top:20px"><input type="checkbox" id="ed-pron" ${item.pronChecked ? 'checked' : ''}> 発音確認済み</label>
       </div>
-      <p class="muted small">見た回数 ${item.seenCount} 回 ／ 登録 ${new Date(item.createdAt).toLocaleDateString()}${item.checkedAt ? ` ／ ✓ ${new Date(item.checkedAt).toLocaleDateString()}` : ''}</p>
+      <p class="muted small">見た回数 ${item.seenCount} 回 ／${item.quizCorrect || item.quizWrong ? ` クイズ ○${item.quizCorrect || 0} ×${item.quizWrong || 0} ／` : ''} 登録 ${new Date(item.createdAt).toLocaleDateString()}${item.checkedAt ? ` ／ ✓ ${new Date(item.checkedAt).toLocaleDateString()}` : ''}</p>
     </div>
     <div class="actions" style="justify-content:space-between">
       <div class="row">
@@ -314,6 +315,9 @@ async function dedupeDialog() {
         kept.tags = uniq([...kept.tags, ...i.tags]);
         kept.sources = uniq([...kept.sources, ...i.sources]);
         kept.seenCount += i.seenCount;
+        kept.quizCorrect = (kept.quizCorrect || 0) + (i.quizCorrect || 0);
+        kept.quizWrong = (kept.quizWrong || 0) + (i.quizWrong || 0);
+        kept.quizLastAt = Math.max(kept.quizLastAt || 0, i.quizLastAt || 0) || null;
         kept.pronChecked ||= i.pronChecked;
         if (!kept.note && i.note) kept.note = i.note;
       }
