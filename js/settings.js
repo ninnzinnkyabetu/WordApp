@@ -4,7 +4,7 @@ const KEY = 'wordapp.settings';
 const defaults = {
   interval: 1.5,      // 流し見の表示秒数
   order: 'shuffle',   // shuffle | new | old | leastSeen
-  autoSpeak: false,   // 流し見で自動読み上げ
+  autoSpeak: true,    // 流し見で単語が出たら自動で発音
   rate: 1,            // 読み上げ速度
   voiceURI: '',
   filter: '',         // 流し見の絞り込み（"tag:xxx" / "src:xxx"）
@@ -12,7 +12,12 @@ const defaults = {
 };
 
 function load() {
-  try { return { ...defaults, ...JSON.parse(localStorage.getItem(KEY) || '{}') }; }
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
+    // 自動発音を既定 ON にした（v2）。以前の既定 OFF のまま保存された端末も一度だけ ON にする
+    if ((saved.v || 1) < 2) { delete saved.autoSpeak; saved.v = 2; }
+    return { ...defaults, ...saved };
+  }
   catch { return { ...defaults }; }
 }
 
