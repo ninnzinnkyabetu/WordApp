@@ -4,7 +4,7 @@ import * as store from '../store.js';
 import { settings, saveSettings } from '../settings.js';
 import { speak, stop as stopSpeak } from '../speech.js';
 import { $, toast } from '../ui.js';
-import { filterOptions, matchFilter } from './common.js';
+import { scopePicker, matchScope } from './common.js';
 
 const root = $('#view-flow');
 let queue = [];     // item id の配列
@@ -14,6 +14,7 @@ let visible = false;
 let dirty = true;   // 他の画面でデータが変わったら出題リストを作り直す
 let tick = 0;       // 自動送りのキャンセル用
 let built = false;
+let picker;         // 絞り込み（出典・タグ）
 
 store.onChange(() => { dirty = true; });
 window.addEventListener('queue-reset', () => { dirty = true; });
@@ -21,7 +22,7 @@ window.addEventListener('queue-reset', () => { dirty = true; });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function eligible(i) {
-  return store.isVisible(i) && i.stage < 2 && matchFilter(i, settings.filter);
+  return store.isVisible(i) && i.stage < 2 && matchScope(i, settings.flowScope);
 }
 
 function buildQueue() {
@@ -48,14 +49,13 @@ function current() {
 
 function skeleton() {
   root.innerHTML = `
-    <div class="row">
-      <select id="flow-filter" class="grow" aria-label="絞り込み"></select>
-    </div>
+    <div id="flow-scope"></div>
     <div id="flow-body"></div>`;
-  $('#flow-filter', root).addEventListener('change', (e) => {
-    saveSettings({ filter: e.target.value });
-    buildQueue();
-    display();
+  picker = scopePicker($('#flow-scope', root), {
+    key: 'flow',
+    get: () => settings.flowScope,
+    set: (s) => { saveSettings({ flowScope: s }); buildQueue(); display(); },
+    save: (s) => saveSettings({ flowScope: s }),
   });
   built = true;
 }
@@ -109,13 +109,6 @@ function renderEmpty(msg, withAdd) {
       ${withAdd ? '<button class="btn primary" id="flow-goadd">単語を追加する</button>' : ''}
     </div>`;
   $('#flow-goadd', root)?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('nav', { detail: 'add' })));
-}
-
-function refreshFilter() {
-  const sel = $('#flow-filter', root);
-  sel.innerHTML = filterOptions(settings.filter);
-  sel.value = settings.filter;
-  if (sel.value !== settings.filter) { saveSettings({ filter: '' }); sel.value = ''; }
 }
 
 /** 現在位置のカードを表示。無効になった語は飛ばし、最後まで行ったら次の周へ。 */
@@ -243,7 +236,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) pause
 export function show() {
   visible = true;
   if (!built) skeleton();
-  refreshFilter();
+  picker.refresh();
   if (dirty) buildQueue();
   if (!$('#flow-card', root)) $('#flow-body', root).innerHTML = '';
   display();

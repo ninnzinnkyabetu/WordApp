@@ -7,7 +7,7 @@ import { settings, saveSettings } from '../settings.js';
 import { speak, stop as stopSpeak } from '../speech.js';
 import { $, $$ } from '../ui.js';
 import { escapeHtml, meaningParts, normalizeMeaning } from '../text.js';
-import { filterOptions, matchFilter } from './common.js';
+import { scopePicker, matchScope } from './common.js';
 import * as fx from './quiz-fx.js';
 
 const root = $('#view-quiz');
@@ -40,7 +40,7 @@ const go = (name) => window.dispatchEvent(new CustomEvent('nav', { detail: name 
 function eligible(i) {
   return store.isVisible(i) && hasMeaning(i)
     && (settings.quizIncludeDone || i.stage < 2)
-    && matchFilter(i, settings.quizFilter);
+    && matchScope(i, settings.quizScope);
 }
 
 /** 苦手（間違いが多い）→ 久しぶり の順。同点はランダム。 */
@@ -93,8 +93,7 @@ function renderSetup() {
   root.innerHTML = `
     <h2>4択クイズ</h2>
     <div class="card stack">
-      <label class="field"><span>出題範囲</span>
-        <select id="qz-filter">${filterOptions(settings.quizFilter)}</select></label>
+      <div><span class="muted small">出題範囲</span><div id="qz-scope"></div></div>
       <div><span class="muted small">問題数</span>
         <div class="seg">${seg('quizCount', 10, '10問')}${seg('quizCount', 20, '20問')}${seg('quizCount', 0, 'すべて')}</div></div>
       <div><span class="muted small">出す順</span>
@@ -109,9 +108,11 @@ function renderSetup() {
     </div>
     ${enough ? '' : '<p style="text-align:center"><button class="btn" id="qz-goadd">単語を追加する</button></p>'}`;
 
-  const sel = $('#qz-filter', root);
-  if (sel.value !== settings.quizFilter) saveSettings({ quizFilter: '' });
-  sel.addEventListener('change', (e) => { saveSettings({ quizFilter: e.target.value }); renderSetup(); });
+  scopePicker($('#qz-scope', root), {
+    key: 'quiz',
+    get: () => settings.quizScope,
+    set: (s) => { saveSettings({ quizScope: s }); renderSetup(); },
+  });
   $$('[data-set]', root).forEach((b) => b.addEventListener('click', () => {
     const v = b.dataset.set === 'quizOrder' ? b.dataset.v : Number(b.dataset.v);
     saveSettings({ [b.dataset.set]: v });
