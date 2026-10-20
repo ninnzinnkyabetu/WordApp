@@ -14,8 +14,7 @@ const root = $('#view-quiz');
 const CHOICES = 4;
 const AUTO_NEXT_MS = 400;
 const MILESTONE_NEXT_MS = 700;   // 節目の文字は次の問題の上でも消えていくので少しだけ長く
-const WRONG_NEXT_MS = 1800;      // 不正解は正解を確かめる時間をとる
-const WRONG_NOTE_NEXT_MS = 2600; // メモがあるときはさらに長く
+// 不正解（時間切れ含む）は自動で進めず、正解を確かめてから「次へ」で進む
 
 let visible = false;
 let phase = 'setup';  // setup | question | result
@@ -228,17 +227,11 @@ function answer(n) {
   fx.broken(streak);
   streak = 0;
   renderStreak(false);
-  const ms = item.note ? WRONG_NOTE_NEXT_MS : WRONG_NEXT_MS;
   $('#qz-after', root).innerHTML = `
     ${n === -1 ? '<p class="quiz-timeup">⏱ 時間切れ</p>' : ''}
     ${item.note ? `<p class="muted small">${escapeHtml(item.note)}</p>` : ''}
-    <button class="btn big primary quiz-next" id="qz-next">次へ<span class="quiz-next-bar"></span></button>`;
+    <button class="btn big primary quiz-next" id="qz-next">次へ</button>`;
   $('#qz-next', root).addEventListener('click', next);
-  const bar = $('.quiz-next-bar', root);
-  bar.style.transitionDuration = `${ms}ms`;
-  void bar.offsetWidth;
-  bar.style.width = '100%';
-  timer = setTimeout(next, ms);
 }
 
 function next() {
