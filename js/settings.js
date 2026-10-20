@@ -14,7 +14,7 @@ const defaults = {
   quizFilter: '',     // クイズの出題範囲
   quizIncludeDone: false, // ◎ 済みも出題する
   quizSound: true,    // クイズの効果音
-  quizLimit: 5,       // クイズ 1 問の制限時間（秒、0 = なし）
+  quizLimit: 3,       // クイズ 1 問の制限時間（秒、0 = なし）
 };
 
 function load() {
@@ -22,6 +22,8 @@ function load() {
     const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
     // 自動発音を既定 ON にした（v2）。以前の既定 OFF のまま保存された端末も一度だけ ON にする
     if ((saved.v || 1) < 2) { delete saved.autoSpeak; saved.v = 2; }
+    // クイズの制限時間の既定を 5 秒 → 3 秒にした（v3）。前の既定の 5 秒のままの端末も 3 秒にする
+    if (saved.v < 3) { if (saved.quizLimit === 5) delete saved.quizLimit; saved.v = 3; }
     return { ...defaults, ...saved };
   }
   catch { return { ...defaults }; }
