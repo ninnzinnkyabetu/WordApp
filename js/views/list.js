@@ -4,7 +4,7 @@ import { $, $$, toast, openDialog, confirmDialog } from '../ui.js';
 import { escapeHtml, normalizeKey, meaningParts, normalizeMeaning, splitTags, uniq } from '../text.js';
 import { speak } from '../speech.js';
 import { findDuplicateGroups } from '../importer.js';
-import { stageBadge, filterOptions, matchFilter } from './common.js';
+import { stageBadge } from './common.js';
 
 const root = $('#view-list');
 const PAGE = 200;
@@ -18,7 +18,7 @@ const FILTERS = {
   trash: { label: 'ゴミ箱', fn: (i) => store.isAlive(i) && !!i.deletedAt },
 };
 
-const state = { q: '', filter: 'all', scope: '', kind: '', sort: 'new', select: false, selected: new Set(), limit: PAGE };
+const state = { q: '', filter: 'all', src: '', tags: new Set(), tagAll: false, kind: '', sort: 'new', select: false, selected: new Set(), limit: PAGE };
 let built = false;
 
 function skeleton() {
@@ -29,13 +29,24 @@ function skeleton() {
     </div>
     <input type="search" id="ls-q" placeholder="検索（英語・日本語・タグ・出典）" autocomplete="off">
     <div class="row" style="margin-top:10px;flex-wrap:nowrap">
-      <select id="ls-scope" class="grow" style="min-width:0" aria-label="タグ・出典で絞り込み"></select>
+      <select id="ls-src" class="grow" style="min-width:0" aria-label="出典で絞り込み"></select>
       <select id="ls-kind" style="width:auto" aria-label="単語・フレーズで絞り込み">
         <option value="">単語＋フレーズ</option>
         <option value="word">単語のみ</option>
         <option value="phrase">フレーズのみ</option>
       </select>
     </div>
+    <details id="ls-tagbox" style="margin-top:10px">
+      <summary id="ls-tagsum"></summary>
+      <div class="row" style="margin-top:8px">
+        <div class="seg grow" id="ls-tagmode">
+          <button class="btn" data-mode="any">いずれかを含む</button>
+          <button class="btn" data-mode="all">すべてを含む</button>
+        </div>
+        <button class="btn small" id="ls-tagclear">解除</button>
+      </div>
+      <div class="seg" id="ls-tags" style="margin-top:8px"></div>
+    </details>
     <div class="row between" style="margin-top:10px">
       <div class="seg" id="ls-filters"></div>
     </div>
@@ -54,8 +65,17 @@ function skeleton() {
 
   $('#ls-q', root).addEventListener('input', (e) => { state.q = e.target.value; state.limit = PAGE; renderList(); });
   const onNarrow = (key) => (e) => { state[key] = e.target.value; state.selected.clear(); state.limit = PAGE; renderList(); };
-  $('#ls-scope', root).addEventListener('change', onNarrow('scope'));
+  $('#ls-src', root).addEventListener('change', onNarrow('src'));
   $('#ls-kind', root).addEventListener('change', onNarrow('kind'));
+  const onTags = () => { state.selected.clear(); state.limit = PAGE; renderFilters(); renderList(); };
+  $('#ls-tags', root).addEventListener('click', (e) => {
+    const t = e.target.closest('[data-tag]')?.dataset.tag;
+    if (t === undefined) return;
+    state.tags.has(t) ? state.tags.delete(t) : state.tags.add(t);
+    onTags();
+  });
+  $$('[data-mode]', root).forEach((b) => b.addEventListener('click', () => { state.tagAll = b.dataset.mode === 'all'; onTags(); }));
+  $('#ls-tagclear', root).addEventListener('click', () => { state.tags.clear(); onTags(); });
   $('#ls-sort', root).addEventListener('change', (e) => { state.sort = e.target.value; renderList(); });
   $('#ls-selmode', root).addEventListener('click', () => {
     state.select = !state.select;
@@ -67,11 +87,29 @@ function skeleton() {
 }
 
 function renderFilters() {
-  // タグ・出典の候補は件数ごと作り直す。選んでいたものが消えたら「すべて」に戻す
-  const sel = $('#ls-scope', root);
-  sel.innerHTML = filterOptions(state.scope);
-  sel.value = state.scope;
-  if (sel.value !== state.scope) { state.scope = ''; sel.value = ''; }
+  // タグ・出典の候補は件数ごと作り直す。選んでいたものが消えたら選択から外す
+  const tags = new Map();
+  const srcs = new Map();
+  for (const i of store.active()) {
+    i.tags.forEach((t) => tags.set(t, (tags.get(t) || 0) + 1));
+    i.sources.forEach((s) => srcs.set(s, (srcs.get(s) || 0) + 1));
+  }
+  const sortKeys = (m) => [...m.keys()].sort((a, b) => a.localeCompare(b, 'ja'));
+
+  if (state.src && !srcs.has(state.src)) state.src = '';
+  $('#ls-src', root).innerHTML = `<option value="">すべての出典</option>${sortKeys(srcs).map((s) =>
+    `<option value="${escapeHtml(s)}"${s === state.src ? ' selected' : ''}>${escapeHtml(s)}（${srcs.get(s)}）</option>`).join('')}`;
+
+  state.tags.forEach((t) => { if (!tags.has(t)) state.tags.delete(t); });
+  $('#ls-tagbox', root).hidden = !tags.size;
+  $('#ls-tagsum', root).textContent = state.tags.size
+    ? `タグ：${[...state.tags].map((t) => `#${t}`).join(state.tagAll ? ' かつ ' : ' または ')}`
+    : 'タグで絞り込む';
+  $('#ls-tags', root).innerHTML = sortKeys(tags).map((t) =>
+    `<button class="btn ${state.tags.has(t) ? 'sel' : ''}" data-tag="${escapeHtml(t)}">#${escapeHtml(t)} ${tags.get(t)}</button>`).join('');
+  $$('[data-mode]', root).forEach((b) => b.classList.toggle('sel', (b.dataset.mode === 'all') === state.tagAll));
+  $('#ls-tagclear', root).disabled = !state.tags.size;
+
   const counts = {};
   const alive = store.all();
   for (const k of Object.keys(FILTERS)) counts[k] = alive.filter(FILTERS[k].fn).length;
@@ -92,10 +130,16 @@ function matches(i, q) {
   return q.split(/\s+/).every((w) => hay.includes(w));
 }
 
+function matchTags(i) {
+  if (!state.tags.size) return true;
+  const sel = [...state.tags];
+  return state.tagAll ? sel.every((t) => i.tags.includes(t)) : sel.some((t) => i.tags.includes(t));
+}
+
 function filtered() {
   const q = state.q.normalize('NFKC').toLowerCase().trim();
-  const list = store.all().filter((i) => FILTERS[state.filter].fn(i) && matchFilter(i, state.scope)
-    && (!state.kind || i.kind === state.kind) && matches(i, q));
+  const list = store.all().filter((i) => FILTERS[state.filter].fn(i) && matchTags(i)
+    && (!state.src || i.sources.includes(state.src)) && (!state.kind || i.kind === state.kind) && matches(i, q));
   const cmp = {
     new: (a, b) => b.createdAt - a.createdAt,
     old: (a, b) => a.createdAt - b.createdAt,
@@ -114,7 +158,7 @@ function renderList() {
   renderBulk(list);
 
   if (!list.length) {
-    $('#ls-body', root).innerHTML = `<div class="empty">${state.q || state.scope || state.kind ? '見つかりませんでした' : '該当する単語はありません'}</div>`;
+    $('#ls-body', root).innerHTML = `<div class="empty">${state.q || state.src || state.tags.size || state.kind ? '見つかりませんでした' : '該当する単語はありません'}</div>`;
     return;
   }
   $('#ls-body', root).innerHTML = `
