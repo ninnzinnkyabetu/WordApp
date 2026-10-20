@@ -6,7 +6,7 @@ const SHELL = [
   './', 'index.html', 'js/version.js', 'js/update.js', 'css/style.css', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
   'js/app.js', 'js/store.js', 'js/text.js', 'js/importer.js', 'js/speech.js', 'js/settings.js', 'js/ui.js',
   'js/sync.js', 'js/firebase-config.js',
-  'js/views/common.js', 'js/views/flow.js', 'js/views/quiz.js','js/views/pron.js', 'js/views/list.js', 'js/views/add.js', 'js/views/settings.js',
+  'js/views/common.js', 'js/views/flow.js', 'js/views/quiz.js', 'js/views/quiz-fx.js', 'js/views/pron.js', 'js/views/list.js', 'js/views/add.js', 'js/views/settings.js',
 ];
 
 self.addEventListener('install', (e) => {

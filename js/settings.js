@@ -13,6 +13,7 @@ const defaults = {
   quizOrder: 'weak',  // weak（苦手・久しぶり優先） | shuffle
   quizFilter: '',     // クイズの出題範囲
   quizIncludeDone: false, // ◎ 済みも出題する
+  quizSound: true,    // クイズの効果音
 };
 
 function load() {
