@@ -2,6 +2,7 @@ import * as store from './store.js';
 import * as sync from './sync.js';
 import { applyTheme } from './settings.js';
 import { $$, toast } from './ui.js';
+import * as update from './update.js';
 import * as flow from './views/flow.js';
 import * as quiz from './views/quiz.js';
 import * as pron from './views/pron.js';
@@ -41,6 +42,13 @@ async function main() {
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
+
+  update.announce();
+  update.check();
+  // ホーム画面のアプリは閉じずに裏から戻ることが多いので、戻ったときにも確認する
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') update.check();
+  });
 }
 
 window.addEventListener('unhandledrejection', (e) => toast(`エラー: ${e.reason?.message || e.reason}`, 4000));

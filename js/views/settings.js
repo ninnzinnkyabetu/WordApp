@@ -5,6 +5,7 @@ import { englishVoices, speak, supported } from '../speech.js';
 import { $, toast, download, readFile, confirmDialog } from '../ui.js';
 import { escapeHtml } from '../text.js';
 import * as sync from '../sync.js';
+import * as update from '../update.js';
 
 const root = $('#view-settings');
 
@@ -87,6 +88,15 @@ function render() {
     <div class="card stack" style="margin-top:16px">
       <h3 style="margin-top:0">同期（スマホ・PC）</h3>
       <div id="st-sync"></div>
+    </div>
+
+    <div class="card stack" style="margin-top:16px">
+      <h3 style="margin-top:0">バージョン</h3>
+      <p class="small">いま動いている版：<strong>v${escapeHtml(update.VERSION)}</strong></p>
+      <div class="row">
+        <button class="btn" id="st-update-check">更新を確認</button>
+        <button class="btn" id="st-update-reload">再読み込み</button>
+      </div>
     </div>`;
   renderSync();
 
@@ -101,6 +111,9 @@ function render() {
   $('#st-rate', root).oninput = (e) => { saveSettings({ rate: Number(e.target.value) }); $('#st-rate-v', root).textContent = settings.rate; };
   $('#st-test', root).onclick = () => speak('have to be');
   $('#st-theme', root).onchange = (e) => { saveSettings({ theme: e.target.value }); applyTheme(); };
+
+  $('#st-update-check', root).onclick = () => update.check(false);
+  $('#st-update-reload', root).onclick = () => update.reload();
 
   $('#st-export', root).onclick = () => {
     const d = new Date();

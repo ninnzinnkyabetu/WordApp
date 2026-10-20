@@ -29,6 +29,8 @@ powershell -ExecutionPolicy Bypass -File serve.ps1
 | `js/importer.js` | 重複チェック（新規 / 同じ意味 / 意味違い）と反映 |
 | `js/speech.js` | 読み上げ |
 | `js/views/*.js` | 各画面（流し見・発音・一覧・追加・設定） |
+| `js/version.js` | バージョン番号（`YYYY.MM.DD-n`）。**更新を出すたびにここを書き換える**。sw.js のキャッシュ名にも使う |
+| `js/update.js` | 起動時のバージョン表示と、サーバー上の版との差分チェック |
 | `sw.js` | オフライン対応（ネットワーク優先） |
 
 ## 取り込み形式

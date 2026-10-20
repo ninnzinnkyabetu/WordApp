@@ -3,9 +3,17 @@ export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
 let toastTimer;
-export function toast(msg, ms = 2000) {
+/** action = { label, onClick } を渡すと、トーストにボタンを付ける */
+export function toast(msg, ms = 2000, action) {
   const el = $('#toast');
   el.textContent = msg;
+  el.classList.toggle('has-action', !!action);
+  if (action) {
+    const b = document.createElement('button');
+    b.textContent = action.label;
+    b.onclick = () => { el.classList.remove('show'); action.onClick(); };
+    el.append(b);
+  }
   el.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), ms);
