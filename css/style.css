@@ -304,3 +304,15 @@ pre.prompt {
   position: absolute; left: 0; bottom: 0; height: 4px; width: 0;
   background: rgb(255 255 255 / .6); transition-property: width; transition-timing-function: linear;
 }
+.quiz-card { position: relative; overflow: hidden; }
+.quiz-limit {
+  position: absolute; left: 0; bottom: 0; height: 5px; width: 100%;
+  background: var(--accent); animation: limit linear forwards;
+}
+@keyframes limit {
+  0% { width: 100%; background: var(--accent); }
+  65% { background: var(--accent); }
+  80% { background: var(--warn); }
+  100% { width: 0; background: var(--danger); }
+}
+.quiz-timeup { margin: 12px 0 0; text-align: center; font-weight: 700; color: var(--danger); }

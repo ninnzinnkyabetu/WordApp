@@ -14,6 +14,7 @@ const defaults = {
   quizFilter: '',     // クイズの出題範囲
   quizIncludeDone: false, // ◎ 済みも出題する
   quizSound: true,    // クイズの効果音
+  quizLimit: 5,       // クイズ 1 問の制限時間（秒、0 = なし）
 };
 
 function load() {

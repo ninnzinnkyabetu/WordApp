@@ -100,6 +100,8 @@ function renderSetup() {
         <div class="seg">${seg('quizCount', 10, '10問')}${seg('quizCount', 20, '20問')}${seg('quizCount', 0, 'すべて')}</div></div>
       <div><span class="muted small">出す順</span>
         <div class="seg">${seg('quizOrder', 'weak', '苦手・久しぶり優先')}${seg('quizOrder', 'shuffle', 'ランダム')}</div></div>
+      <div><span class="muted small">制限時間（1問）</span>
+        <div class="seg">${seg('quizLimit', 0, 'なし')}${seg('quizLimit', 3, '3秒')}${seg('quizLimit', 5, '5秒')}${seg('quizLimit', 8, '8秒')}</div></div>
       <label class="row small"><input type="checkbox" id="qz-done" ${settings.quizIncludeDone ? 'checked' : ''}> ◎ 済みの単語も出す</label>
       <label class="row small"><input type="checkbox" id="qz-sound" ${settings.quizSound ? 'checked' : ''}> 効果音</label>
       <p class="muted small" style="margin:0">対象 ${count} 語</p>
@@ -112,7 +114,7 @@ function renderSetup() {
   if (sel.value !== settings.quizFilter) saveSettings({ quizFilter: '' });
   sel.addEventListener('change', (e) => { saveSettings({ quizFilter: e.target.value }); renderSetup(); });
   $$('[data-set]', root).forEach((b) => b.addEventListener('click', () => {
-    const v = b.dataset.set === 'quizCount' ? Number(b.dataset.v) : b.dataset.v;
+    const v = b.dataset.set === 'quizOrder' ? b.dataset.v : Number(b.dataset.v);
     saveSettings({ [b.dataset.set]: v });
     renderSetup();
   }));
@@ -153,6 +155,7 @@ function renderQuestion() {
     <div class="card quiz-card" id="qz-card" style="margin-top:12px">
       <div class="flow-term ${item.kind === 'phrase' ? 'phrase' : ''}">${escapeHtml(item.term)}</div>
       <button class="btn icon" id="qz-speak" aria-label="発音" style="margin-top:8px">🔊</button>
+      ${settings.quizLimit > 0 ? '<div class="quiz-limit" id="qz-limit"></div>' : ''}
     </div>
     <div class="quiz-opts">
       ${options.map((o, n) => `
@@ -165,6 +168,16 @@ function renderQuestion() {
   $$('.quiz-opt', root).forEach((b) => b.addEventListener('click', () => answer(Number(b.dataset.n))));
   renderStreak(false);
   if (settings.autoSpeak) speak(item.term);
+  startLimit();
+}
+
+/** 制限時間。バーを縮めていき、0 になったら時間切れ（不正解扱い） */
+function startLimit() {
+  const bar = $('#qz-limit', root);
+  if (!bar) return;
+  const ms = settings.quizLimit * 1000;
+  bar.style.animationDuration = `${ms}ms`;
+  timer = setTimeout(() => answer(-1), ms);
 }
 
 /** 連続数のバッジとカードの光り方。bump = 増えた瞬間に弾ませる */
@@ -179,11 +192,15 @@ function renderStreak(bump) {
   if (bump && streak >= 2) { void el.offsetWidth; el.classList.add('bump'); }
 }
 
+/** n = 選んだ番号。-1 は時間切れ */
 function answer(n) {
-  if (!q || q.answered !== null || !q.options[n]) return;
+  if (!q || q.answered !== null || (n !== -1 && !q.options[n])) return;
+  clearTimeout(timer);
   q.answered = n;
   const { item } = q;
   const ok = q.options[n] === item;
+  const limitBar = $('#qz-limit', root);
+  if (limitBar) limitBar.style.animationPlayState = 'paused';
   results.push({ id: item.id, ok });
 
   if (!retry) {
@@ -213,6 +230,7 @@ function answer(n) {
   renderStreak(false);
   const ms = item.note ? WRONG_NOTE_NEXT_MS : WRONG_NEXT_MS;
   $('#qz-after', root).innerHTML = `
+    ${n === -1 ? '<p class="quiz-timeup">⏱ 時間切れ</p>' : ''}
     ${item.note ? `<p class="muted small">${escapeHtml(item.note)}</p>` : ''}
     <button class="btn big primary quiz-next" id="qz-next">次へ<span class="quiz-next-bar"></span></button>`;
   $('#qz-next', root).addEventListener('click', next);
@@ -272,8 +290,21 @@ document.addEventListener('keydown', (e) => {
 export function show() {
   visible = true;
   if (phase === 'setup') renderSetup();
-  else if (phase === 'question' && q?.answered !== null) next(); // 回答後に画面を離れていたら次へ
+  else if (phase === 'question') resume();
 }
+
+/** 画面を離れて戻ったとき。回答後なら次へ、回答前なら制限時間をやり直す */
+function resume() {
+  if (!q) return;
+  if (q.answered !== null) next();
+  else renderQuestion();
+}
+
+// アプリを裏に回している間に時間切れにならないよう止める
+document.addEventListener('visibilitychange', () => {
+  if (!visible || phase !== 'question') return;
+  if (document.hidden) { clearTimeout(timer); stopSpeak(); } else resume();
+});
 
 export function hide() {
   visible = false;
