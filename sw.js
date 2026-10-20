@@ -1,6 +1,6 @@
 // オフライン対応。常にネットワークを優先し、つながらない時だけキャッシュを使う
 // （更新がすぐ反映され、古い版が残り続ける問題を避けるため）。
-const CACHE = 'wordapp-v3';
+const CACHE = 'wordapp-v4';
 const SHELL = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
   'js/app.js', 'js/store.js', 'js/text.js', 'js/importer.js', 'js/speech.js', 'js/settings.js', 'js/ui.js',
