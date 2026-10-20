@@ -40,6 +40,7 @@ const go = (name) => window.dispatchEvent(new CustomEvent('nav', { detail: name 
 function eligible(i) {
   return store.isVisible(i) && hasMeaning(i)
     && (settings.quizIncludeDone || i.stage < 2)
+    && (!settings.quizKind || i.kind === settings.quizKind)
     && matchScope(i, settings.quizScope);
 }
 
@@ -94,6 +95,8 @@ function renderSetup() {
     <h2>4択クイズ</h2>
     <div class="card stack">
       <div><span class="muted small">出題範囲</span><div id="qz-scope"></div></div>
+      <div><span class="muted small">種類</span>
+        <div class="seg">${seg('quizKind', '', '単語＋フレーズ')}${seg('quizKind', 'word', '単語のみ')}${seg('quizKind', 'phrase', 'フレーズのみ')}</div></div>
       <div><span class="muted small">問題数</span>
         <div class="seg">${seg('quizCount', 10, '10問')}${seg('quizCount', 20, '20問')}${seg('quizCount', 0, 'すべて')}</div></div>
       <div><span class="muted small">出す順</span>
@@ -114,7 +117,7 @@ function renderSetup() {
     set: (s) => { saveSettings({ quizScope: s }); renderSetup(); },
   });
   $$('[data-set]', root).forEach((b) => b.addEventListener('click', () => {
-    const v = b.dataset.set === 'quizOrder' ? b.dataset.v : Number(b.dataset.v);
+    const v = ['quizOrder', 'quizKind'].includes(b.dataset.set) ? b.dataset.v : Number(b.dataset.v);
     saveSettings({ [b.dataset.set]: v });
     renderSetup();
   }));

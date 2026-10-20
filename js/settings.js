@@ -12,6 +12,7 @@ const defaults = {
   quizCount: 10,      // クイズの問題数（0 = すべて）
   quizOrder: 'weak',  // weak（苦手・久しぶり優先） | shuffle
   quizScope: { src: '', tags: [], all: false }, // クイズの出題範囲
+  quizKind: '',       // クイズの種類（'' = 単語＋フレーズ / word / phrase）
   quizIncludeDone: false, // ◎ 済みも出題する
   quizSound: true,    // クイズの効果音
   quizLimit: 3,       // クイズ 1 問の制限時間（秒、0 = なし）
